@@ -7,7 +7,7 @@ namespace Tetris.Core
 {
     public enum TetrominoColour
     {
-        Red, Magenta, Yellow, Cyan, Blue, LightBlue, LightGrey, Lime
+        Empty, Red, Magenta, Yellow, Cyan, Blue, LightBlue, LightGrey, Lime
     }
 
     public enum Direction
@@ -17,13 +17,13 @@ namespace Tetris.Core
 
     public class Tetromino
     {
-        public static Tetromino I => new Tetromino("0000\n1111", TetrominoColour.Red);
-        public static Tetromino J => new Tetromino("111\n001", TetrominoColour.Magenta);
-        public static Tetromino L => new Tetromino("111\n100", TetrominoColour.Yellow);
-        public static Tetromino O => new Tetromino("11\n11", TetrominoColour.Cyan);
-        public static Tetromino S => new Tetromino("011\n110", TetrominoColour.Blue);
-        public static Tetromino T => new Tetromino("111\n010", TetrominoColour.LightGrey);
-        public static Tetromino Z => new Tetromino("110\n011", TetrominoColour.Lime);
+        public static Tetromino I => new Tetromino('I', "0000\n1111", TetrominoColour.Red);
+        public static Tetromino J => new Tetromino('J', "111\n001", TetrominoColour.Magenta);
+        public static Tetromino L => new Tetromino('L', "111\n100", TetrominoColour.Yellow);
+        public static Tetromino O => new Tetromino('O', "11\n11", TetrominoColour.Cyan);
+        public static Tetromino S => new Tetromino('S', "011\n110", TetrominoColour.Blue);
+        public static Tetromino T => new Tetromino('T', "111\n010", TetrominoColour.LightGrey);
+        public static Tetromino Z => new Tetromino('Z', "110\n011", TetrominoColour.Lime);
 
         private int _bounds;
         private int[,] _grid;
@@ -31,6 +31,7 @@ namespace Tetris.Core
         public int BoundingSquareSize => _bounds;
         public string Pattern { get; private set; }
         public TetrominoColour Colour { get; private set; }
+        public char Name { get; private set; }
 
         public void RotateClockwise()
         {
@@ -41,6 +42,8 @@ namespace Tetris.Core
         {
             Rotate(Direction.Anticlockwise);
         }
+
+        internal int[,] Grid => _grid;
 
         private void Rotate(Direction direction)
         {
@@ -74,10 +77,11 @@ namespace Tetris.Core
             Pattern = String.Join("\n", rows);
         }
 
-        public Tetromino(string pattern, TetrominoColour colour)
+        public Tetromino(char name, string pattern, TetrominoColour colour)
         {
             Pattern = pattern;
             Colour = colour;
+            Name = name;
 
             string[] parts = pattern.Split('\n');
             _bounds = parts.Max(p => p.Length);

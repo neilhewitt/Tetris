@@ -14,11 +14,25 @@ namespace Tetris.Tests
         public void CanCreateMatrix()
         {
             Matrix matrix = null;
+
             Assert.DoesNotThrow(() =>
             {
-                matrix = new Matrix();
+                matrix = new Matrix(null);
             });
             Assert.That(matrix != null);
+        }
+
+        [Test]
+        public void CanInjectTetromino()
+        {
+            Tetromino t = Tetromino.O;
+            Matrix matrix = new Matrix(null);
+
+            Assert.DoesNotThrow(() =>
+            {
+                matrix.Inject(t);
+            });
+            Assert.That(matrix.TetrominoState == "O:22,0");
         }
     }
 }

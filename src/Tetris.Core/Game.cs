@@ -9,6 +9,14 @@ namespace Tetris.Core
     {
         public Matrix Matrix { get; }
 
+        public void BeginPlay()
+        {
+        }
+
+        public void EndPlay()
+        {
+        }
+
         public Game()
         {
             Matrix = new Matrix();
