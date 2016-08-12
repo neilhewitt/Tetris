@@ -7,8 +7,11 @@ namespace Tetris.Core
 {
     public class Game
     {
+        public Matrix Matrix { get; }
+
         public Game()
         {
+            Matrix = new Matrix();
         }
     }
 }
