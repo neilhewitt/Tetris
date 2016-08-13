@@ -17,7 +17,7 @@ namespace Tetris.Tests
 
             Assert.DoesNotThrow(() =>
             {
-                matrix = new Matrix(null);
+                matrix = new Matrix();
             });
             Assert.That(matrix != null);
         }
@@ -26,13 +26,13 @@ namespace Tetris.Tests
         public void CanInjectTetromino()
         {
             Tetromino t = Tetromino.O;
-            Matrix matrix = new Matrix(null);
+            Matrix matrix = new Matrix();
 
             Assert.DoesNotThrow(() =>
             {
-                matrix.Inject(t);
+                matrix.Overlay.InjectTetromino(t);
             });
-            Assert.That(matrix.TetrominoState == "O:22,0");
+            Assert.That(matrix.Overlay.TetrominoInPlay.Name == 'O' && matrix.Overlay.TetrominoPosition.Column == 0 && matrix.Overlay.TetrominoPosition.Row == 0);
         }
     }
 }

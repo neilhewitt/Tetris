@@ -15,16 +15,16 @@ namespace Tetris.Command
         {
             int index = 0;
             Game game = new Game();
-            game.Matrix.Inject(_tetrominoes[index]);
+            game.Matrix.Overlay.InjectTetromino(_tetrominoes[index]);
             ShowFrame();
             
             while (true)
             {
                 DisplayGameState(game);
-                if (!game.Matrix.MoveOne())
+                if (!game.Matrix.Overlay.Move())
                 {
                     index = (index < 6 ? index + 1 : 0);
-                    game.Matrix.Inject(_tetrominoes[index]);
+                    game.Matrix.Overlay.InjectTetromino(_tetrominoes[index]);
                 }
                 Thread.Sleep(500);
             }
@@ -46,7 +46,7 @@ namespace Tetris.Command
         private static void DisplayGameState(Game game)
         {
             Matrix matrix = game.Matrix;
-            string gridState = matrix.GridState;
+            string gridState = matrix.State;
 
             int row = 0;
             for (int i = row; i < 22; i++)
