@@ -17,9 +17,9 @@ namespace Tetris.Core
         {
         }
 
-        public Game()
+        public Game(int rows = 22, int columns = 10)
         {
-            Matrix = new Matrix();
+            Matrix = new Matrix(rows, columns);
         }
     }
 }

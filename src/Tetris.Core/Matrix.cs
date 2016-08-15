@@ -10,34 +10,59 @@ namespace Tetris.Core
 {
     public class Matrix
     {
-        private const int _rows = 22;
-        private const int _columns = 10;
-        private int[,] _grid;
+        private int _rows;
+        private int _columns;
+        private Grid<int> _grid;
+        private TetrominoCarrier _carrier;
 
         public string State => CaptureState();
-        public Overlay Overlay { get; private set; }
+
+        public void InjectTetromino(Tetromino t, int column = 0)
+        {
+            _carrier.InjectTetromino(t, column);
+        }
+
+        public bool Move()
+        {
+            return _carrier.Move();
+        }
+
+        public void FreezeTetromino()
+        {
+            Tetromino t = _carrier.Tetromino;
+            int row = _carrier.Position.Row;
+            int column = _carrier.Position.Column;
+            int size = t.GridSize;
+
+            // copy the tetromino shape data to the grid - it's now 'frozen'
+            t.Grid.Copy(0, 0, t.GridSize, t.GridSize, _grid, row, column, (input) => input == 1, (output) => (int)t.Colour);
+            _carrier.RemoveTetromino();
+        }
 
         public Cell CellAt(int row, int column)
         {
-            if (row < 0 || row > _rows || column < 0 || column > _columns) return null;
+            if (row < 0 || row >= _rows || column < 0 || column >= _columns) return null;
 
             return new Cell(row, column, (TetrominoColour)_grid[row, column], this);
         }
 
+        internal int Rows => _rows;
+        internal int Columns => _columns;
+
         private string CaptureState()
         {
-            Tetromino t = Overlay.TetrominoInPlay;
+            Tetromino t = _carrier.Tetromino;
             StringBuilder builder = new StringBuilder();
             for (int i = 0; i < _rows; i++)
             {
                 for (int j = 0; j < _columns; j++)
                 {
-                    int row = Overlay.TetrominoPosition.Row;
-                    int column = Overlay.TetrominoPosition.Column;
+                    int row = _carrier.Position.Row;
+                    int column = _carrier.Position.Column;
 
-                    if ((i >= row && j >= column) && (i < row + t.BoundingSquareSize && j < column + t.BoundingSquareSize))
+                    if ((i >= row && j >= column) && (i < row + t.GridSize && j < column + t.GridSize))
                     {
-                        int[,] grid = t.Grid;
+                        ReadonlyGrid<int> grid = t.Grid;
                         int cell = grid[i - row, j - column];
                         builder.Append((cell == 1 ? ((int)t.Colour).ToString() : "0") + ",");
                     }
@@ -52,10 +77,12 @@ namespace Tetris.Core
             return builder.ToString();
         }
 
-        public Matrix()
+        public Matrix(int rows = 22, int columns = 10)
         {
-            _grid = new int[_rows, _columns];
-            Overlay = new Overlay(this);
+            _rows = rows;
+            _columns = columns;
+            _grid = new Grid<int>(_rows, _columns);
+            _carrier = new TetrominoCarrier(this);
         }
     }
 }

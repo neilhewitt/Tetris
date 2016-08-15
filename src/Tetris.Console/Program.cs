@@ -9,24 +9,31 @@ namespace Tetris.Command
 {
     public class Program
     {
-        private static Tetromino[] _tetrominoes = new Tetromino[] { Tetromino.I, Tetromino.J, Tetromino.L, Tetromino.O, Tetromino.S, Tetromino.T, Tetromino.Z };
+        private static Tetromino[] _tetrominoes = new Tetromino[] { Tetromino.I, Tetromino.J, Tetromino.L, Tetromino.O };
+        private static int _rows;
+        private static int _columns;
 
         public static void Main(string[] args)
         {
             int index = 0;
-            Game game = new Game();
-            game.Matrix.Overlay.InjectTetromino(_tetrominoes[index]);
+            int column = 0;
+            _rows = 22;
+            _columns = 50;
+            Game game = new Game(columns: _columns);
+            game.Matrix.InjectTetromino(_tetrominoes[index]);
             ShowFrame();
             
             while (true)
             {
                 DisplayGameState(game);
-                if (!game.Matrix.Overlay.Move())
+                if (!game.Matrix.Move())
                 {
-                    index = (index < 6 ? index + 1 : 0);
-                    game.Matrix.Overlay.InjectTetromino(_tetrominoes[index]);
+                    game.Matrix.FreezeTetromino();
+                    //column += _tetrominoes[index].BoundingSquareSize;
+                    index = (index < 3 ? index + 1 : 0);
+                    game.Matrix.InjectTetromino(_tetrominoes[index], column);
                 }
-                Thread.Sleep(500);
+                Thread.Sleep(100);
             }
         }
 
@@ -36,11 +43,11 @@ namespace Tetris.Command
             Console.SetCursorPosition(0, 0);
             Console.ForegroundColor = ConsoleColor.White;
 
-            for (int i = 0; i < 22; i++)
+            for (int i = 0; i < _rows ; i++)
             {
-                Console.WriteLine("|          |");
+                Console.WriteLine("|" + new string(' ', _columns) + "|");
             }
-            Console.WriteLine("|__________|");
+            Console.WriteLine(new string('^', _columns + 2));
         }
 
         private static void DisplayGameState(Game game)
@@ -69,7 +76,7 @@ namespace Tetris.Command
                     }
                     else
                     {
-                        string colourName = Enum.GetName(typeof(TetrominoColour), (TetrominoColour)value).Replace("Light","");
+                        string colourName = Enum.GetName(typeof(TetrominoColour), (TetrominoColour)value).Replace("Light","").Replace("Grey", "Gray");
                         Console.ForegroundColor = (ConsoleColor)Enum.Parse(typeof(ConsoleColor), colourName);
                         Console.Write("#");
                         Console.ForegroundColor = ConsoleColor.White;

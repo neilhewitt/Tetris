@@ -26,12 +26,42 @@ namespace Tetris.Core
         public static Tetromino Z => new Tetromino('Z', "110\n011", TetrominoColour.Lime);
 
         private int _bounds;
-        private int[,] _grid;
+        private Grid<int> _grid;
+        private IList<Position> _activeCells;
 
-        public int BoundingSquareSize => _bounds;
+        public int GridSize => _bounds;
+        public ReadonlyGrid<int> Grid => new ReadonlyGrid<int>(_grid);
         public string Pattern { get; private set; }
         public TetrominoColour Colour { get; private set; }
         public char Name { get; private set; }
+
+        public IList<Position> ActivePositions
+        {
+            get
+            {
+                lock (this)
+                {
+                    if (_activeCells == null)
+                    {
+                        List<Position> positions = new List<Position>();
+                        for (int i = 0; i < GridSize; i++)
+                        {
+                            for (int j = 0; j < GridSize; j++)
+                            {
+                                if (_grid[i, j] == 1)
+                                {
+                                    positions.Add(new Position(i, j));
+                                }
+                            }
+                        }
+
+                        _activeCells = positions;
+                    }
+
+                    return _activeCells;
+                }
+            }
+        }
 
         public void RotateClockwise()
         {
@@ -43,11 +73,9 @@ namespace Tetris.Core
             Rotate(Direction.Anticlockwise);
         }
 
-        internal int[,] Grid => _grid;
-
         private void Rotate(Direction direction)
         {
-            int[,] transform = new int[_bounds, _bounds];
+            Grid<int> transform = new Grid<int>(_bounds, _bounds);
             for (int y = 0; y < _bounds; y++)
             {
                 for (int x = 0; x < _bounds; x++)
@@ -59,7 +87,11 @@ namespace Tetris.Core
             }
 
             _grid = transform;
-            UpdatePattern();
+            lock (this)
+            {
+                UpdatePattern();
+                _activeCells = null;
+            }
         }
 
         private void UpdatePattern()
@@ -85,7 +117,7 @@ namespace Tetris.Core
 
             string[] parts = pattern.Split('\n');
             _bounds = parts.Max(p => p.Length);
-            _grid = new int[_bounds, _bounds];
+            _grid = new Grid<int>(_bounds, _bounds);
             for (int y = 0; y < _bounds; y++)
             {
                 for (int x = 0; x < _bounds; x++)
