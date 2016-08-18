@@ -7,7 +7,7 @@ namespace Tetris.Core
 {
     public enum TetrominoColour
     {
-        Empty, Red, Magenta, Yellow, Cyan, Blue, LightBlue, LightGrey, Lime
+        Empty, Red, Magenta, Yellow, Cyan, Blue, DarkGray, DarkBlue
     }
 
     public enum Direction
@@ -22,20 +22,19 @@ namespace Tetris.Core
         public static Tetromino L => new Tetromino('L', "111\n100", TetrominoColour.Yellow);
         public static Tetromino O => new Tetromino('O', "11\n11", TetrominoColour.Cyan);
         public static Tetromino S => new Tetromino('S', "011\n110", TetrominoColour.Blue);
-        public static Tetromino T => new Tetromino('T', "111\n010", TetrominoColour.LightGrey);
-        public static Tetromino Z => new Tetromino('Z', "110\n011", TetrominoColour.Lime);
+        public static Tetromino T => new Tetromino('T', "111\n010", TetrominoColour.DarkGray);
+        public static Tetromino Z => new Tetromino('Z', "110\n011", TetrominoColour.DarkBlue);
 
-        private int _bounds;
         private Grid<int> _grid;
-        private IList<Position> _activeCells;
+        private IList<GridCell<int>> _activeCells;
 
-        public int GridSize => _bounds;
-        public ReadonlyGrid<int> Grid => new ReadonlyGrid<int>(_grid);
+        public int GridSize => _grid.Rows;
+        public Grid<int> Grid => _grid.AsReadonly();
         public string Pattern { get; private set; }
         public TetrominoColour Colour { get; private set; }
         public char Name { get; private set; }
 
-        public IList<Position> ActivePositions
+        public IList<GridCell<int>> PopulatedCells
         {
             get
             {
@@ -43,19 +42,19 @@ namespace Tetris.Core
                 {
                     if (_activeCells == null)
                     {
-                        List<Position> positions = new List<Position>();
+                        List<GridCell<int>> cells = new List<GridCell<int>>();
                         for (int i = 0; i < GridSize; i++)
                         {
                             for (int j = 0; j < GridSize; j++)
                             {
                                 if (_grid[i, j] == 1)
                                 {
-                                    positions.Add(new Position(i, j));
+                                    cells.Add(_grid.GetCell(i, j));
                                 }
                             }
                         }
 
-                        _activeCells = positions;
+                        _activeCells = cells;
                     }
 
                     return _activeCells;
@@ -75,13 +74,13 @@ namespace Tetris.Core
 
         private void Rotate(Direction direction)
         {
-            Grid<int> transform = new Grid<int>(_bounds, _bounds);
-            for (int y = 0; y < _bounds; y++)
+            Grid<int> transform = new Grid<int>(GridSize, GridSize);
+            for (int y = 0; y < GridSize; y++)
             {
-                for (int x = 0; x < _bounds; x++)
+                for (int x = 0; x < GridSize; x++)
                 {
-                    int x2 = (direction == Direction.Clockwise) ? (_bounds-1) - y : y;
-                    int y2 = (direction == Direction.Clockwise) ? x : (_bounds-1) - x;
+                    int x2 = (direction == Direction.Clockwise) ? (GridSize-1) - y : y;
+                    int y2 = (direction == Direction.Clockwise) ? x : (GridSize-1) - x;
                     transform[y2, x2] = _grid[y, x];
                 }
             }
@@ -97,10 +96,10 @@ namespace Tetris.Core
         private void UpdatePattern()
         {
             List<string> rows = new List<string>();
-            for (int i = 0; i < _bounds; i++)
+            for (int i = 0; i < GridSize; i++)
             {
                 string row = "";
-                for (int j = 0; j < _bounds; j++)
+                for (int j = 0; j < GridSize; j++)
                 {
                     row += _grid[i, j] == 1 ? "1" : "0";
                 }
@@ -116,11 +115,11 @@ namespace Tetris.Core
             Name = name;
 
             string[] parts = pattern.Split('\n');
-            _bounds = parts.Max(p => p.Length);
-            _grid = new Grid<int>(_bounds, _bounds);
-            for (int y = 0; y < _bounds; y++)
+            int bounds = parts.Max(p => p.Length);
+            _grid = new Grid<int>(bounds, bounds);
+            for (int y = 0; y < bounds; y++)
             {
-                for (int x = 0; x < _bounds; x++)
+                for (int x = 0; x < bounds; x++)
                 {
                     _grid[y, x] = y > parts.Length-1 ? 0 : parts[y][x] == '1' ? 1 : 0;
                 }

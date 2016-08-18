@@ -13,9 +13,29 @@ namespace Tetris.Core
         private int _rows;
         private int _columns;
         private Grid<int> _grid;
-        private TetrominoCarrier _carrier;
+        private Grid<int> _gridWithCarrier;
+        private Carrier _carrier;
 
-        public string State => CaptureState();
+        public Grid<int> GridWithoutCarrier => _grid.AsReadonly();
+        public Grid<int> GridWithCarrier
+        {
+            get
+            {
+                lock (this)
+                {
+                    if (_gridWithCarrier == null && _carrier.Tetromino != null)
+                    {
+                        int size = _carrier.Tetromino.GridSize - 1;
+                        Grid<int> grid = _grid.Clone();
+                        grid.Insert(_carrier.Tetromino.Grid, 0, 0, size, size, _carrier.Position.Row, _carrier.Position.Column, 
+                            (input) => input == 1, (output) => (int)_carrier.Tetromino.Colour);
+                        _gridWithCarrier = grid;
+                    }     
+                }
+
+                return _gridWithCarrier;
+            }
+        }
 
         public void InjectTetromino(Tetromino t, int column = 0)
         {
@@ -24,6 +44,13 @@ namespace Tetris.Core
 
         public bool Move()
         {
+            // clear any filled rows, move grid down
+            // then move carrier down one row (if it can move)
+            // or freeze the tetromino in place
+            lock (this)
+            {
+                _gridWithCarrier = null;
+            }
             return _carrier.Move();
         }
 
@@ -32,57 +59,31 @@ namespace Tetris.Core
             Tetromino t = _carrier.Tetromino;
             int row = _carrier.Position.Row;
             int column = _carrier.Position.Column;
-            int size = t.GridSize;
+            int size = t.GridSize - 1;
 
             // copy the tetromino shape data to the grid - it's now 'frozen'
-            t.Grid.Copy(0, 0, t.GridSize, t.GridSize, _grid, row, column, (input) => input == 1, (output) => (int)t.Colour);
-            _carrier.RemoveTetromino();
-        }
+            // we only copy squares that have shape data in them, and we mutate to the appropriate colour value for the tetromino
+            lock (this)
+            {
+                _grid.Insert(t.Grid, 0, 0, size, size, row, column, (input) => input == 1, (output) => (int)t.Colour);
+                _carrier.RemoveTetromino();
+                lock (this)
+                {
+                    _gridWithCarrier = null;
+                }
 
-        public Cell CellAt(int row, int column)
-        {
-            if (row < 0 || row >= _rows || column < 0 || column >= _columns) return null;
-
-            return new Cell(row, column, (TetrominoColour)_grid[row, column], this);
+            }
         }
 
         internal int Rows => _rows;
         internal int Columns => _columns;
-
-        private string CaptureState()
-        {
-            Tetromino t = _carrier.Tetromino;
-            StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < _rows; i++)
-            {
-                for (int j = 0; j < _columns; j++)
-                {
-                    int row = _carrier.Position.Row;
-                    int column = _carrier.Position.Column;
-
-                    if ((i >= row && j >= column) && (i < row + t.GridSize && j < column + t.GridSize))
-                    {
-                        ReadonlyGrid<int> grid = t.Grid;
-                        int cell = grid[i - row, j - column];
-                        builder.Append((cell == 1 ? ((int)t.Colour).ToString() : "0") + ",");
-                    }
-                    else
-                    {
-                        builder.Append(_grid[i, j].ToString() + ",");
-                    }
-                }
-                builder.Remove(builder.Length-1, 1);
-                builder.Append("|");
-            }
-            return builder.ToString();
-        }
 
         public Matrix(int rows = 22, int columns = 10)
         {
             _rows = rows;
             _columns = columns;
             _grid = new Grid<int>(_rows, _columns);
-            _carrier = new TetrominoCarrier(this);
+            _carrier = new Carrier(this);
         }
     }
 }

@@ -9,12 +9,14 @@ namespace Tetris.Command
 {
     public class Program
     {
-        private static Tetromino[] _tetrominoes = new Tetromino[] { Tetromino.I, Tetromino.J, Tetromino.L, Tetromino.O };
+        private static Tetromino[] _tetrominoes;
         private static int _rows;
         private static int _columns;
 
         public static void Main(string[] args)
         {
+            _tetrominoes = new Tetromino[] { Tetromino.I, Tetromino.J, Tetromino.L, Tetromino.O, Tetromino.S, Tetromino.T, Tetromino.Z };
+
             int index = 0;
             int column = 0;
             _rows = 22;
@@ -30,7 +32,7 @@ namespace Tetris.Command
                 {
                     game.Matrix.FreezeTetromino();
                     //column += _tetrominoes[index].BoundingSquareSize;
-                    index = (index < 3 ? index + 1 : 0);
+                    index = (index < 6 ? index + 1 : 0);
                     game.Matrix.InjectTetromino(_tetrominoes[index], column);
                 }
                 Thread.Sleep(100);
@@ -53,32 +55,22 @@ namespace Tetris.Command
         private static void DisplayGameState(Game game)
         {
             Matrix matrix = game.Matrix;
-            string gridState = matrix.State;
+            Grid<int> grid = matrix.GridWithCarrier;
 
-            int row = 0;
-            for (int i = row; i < 22; i++)
+            foreach (GridRow<int> row in grid.GetRows())
             {
-                Console.SetCursorPosition(1, i);
-                Console.Write("          ");
-            }
-
-            string[] gridRows = gridState.Split('|');
-            foreach (string gridRow in gridRows.Where(r => r != ""))
-            {
-                Console.SetCursorPosition(1, row++);
-                string[] cells = gridRow.Split(',');
-                foreach(string cell in cells)
+                Console.SetCursorPosition(1, row.First().Row);
+                foreach(GridCell<int> cell in row)
                 {
-                    int value = int.Parse(cell);
-                    if (value == 0)
+                    if (cell.Contents == 0)
                     {
                         Console.Write(" ");
                     }
                     else
                     {
-                        string colourName = Enum.GetName(typeof(TetrominoColour), (TetrominoColour)value).Replace("Light","").Replace("Grey", "Gray");
+                        string colourName = Enum.GetName(typeof(TetrominoColour), (TetrominoColour)cell.Contents);
                         Console.ForegroundColor = (ConsoleColor)Enum.Parse(typeof(ConsoleColor), colourName);
-                        Console.Write("#");
+                        Console.Write("0");
                         Console.ForegroundColor = ConsoleColor.White;
                     }
                 }

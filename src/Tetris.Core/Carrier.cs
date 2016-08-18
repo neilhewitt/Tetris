@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Tetris.Core
 {
-    public class TetrominoCarrier
+    public class Carrier
     {
         private Matrix _matrix;
 
@@ -42,11 +42,11 @@ namespace Tetris.Core
                 // because of rotation, we can't be sure which rows of the tetromino grid the actual parts of the tetromino are on
                 // so we ask the tetromino to tell us which positions are occupied and select the max row
 
-                int bottomRowOfTetromino = t.ActivePositions.Select(x => x.Row).Max();
-                int[] activeCellsInRow = t.ActivePositions.Where(x => x.Row == bottomRowOfTetromino).Select(x => x.Column).OrderBy(x => x).ToArray();
-                int gridRowBelowTetromino = row + bottomRowOfTetromino + 1;
+                int bottomRowOfTetrominoIndex = t.PopulatedCells.Select(x => x.Row).Max();
+                IEnumerable<int> activeCellsInRow = t.PopulatedCells.Where(x => x.Row == bottomRowOfTetrominoIndex).Select(x => x.Column);
+                int gridRowBelowTetrominoIndex = row + bottomRowOfTetrominoIndex + 1;
 
-                if (gridRowBelowTetromino >= _matrix.Rows)
+                if (gridRowBelowTetrominoIndex >= _matrix.Rows)
                 {
                     // we're at the bottom
                     return false;
@@ -55,7 +55,7 @@ namespace Tetris.Core
                 {
                     foreach (int activeCell in activeCellsInRow)
                     {
-                        if (_matrix.CellAt(gridRowBelowTetromino, activeCell).Colour != TetrominoColour.Empty)
+                        if (_matrix.GridWithoutCarrier.GetCell(gridRowBelowTetrominoIndex, activeCell).Contents != (int)TetrominoColour.Empty)
                         {
                             cellsAreEmpty = false;
                             break;
@@ -66,7 +66,6 @@ namespace Tetris.Core
                     {
                         Tetromino = t;
                         Position = new Position(row + 1, column);
-
                         return true;
                     }
                 }
@@ -76,7 +75,7 @@ namespace Tetris.Core
         }
 
 
-        public TetrominoCarrier(Matrix matrix)
+        public Carrier(Matrix matrix)
         {
             _matrix = matrix;
         }
