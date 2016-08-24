@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Tetris.Core
@@ -10,29 +11,39 @@ namespace Tetris.Core
         Empty, Red, Magenta, Yellow, Cyan, Blue, DarkGray, DarkBlue
     }
 
-    public enum Direction
-    {
-        Clockwise, Anticlockwise
-    }
-
     public class Tetromino
     {
-        public static Tetromino I => new Tetromino('I', "0000\n1111", TetrominoColour.Red);
-        public static Tetromino J => new Tetromino('J', "111\n001", TetrominoColour.Magenta);
-        public static Tetromino L => new Tetromino('L', "111\n100", TetrominoColour.Yellow);
-        public static Tetromino O => new Tetromino('O', "11\n11", TetrominoColour.Cyan);
-        public static Tetromino S => new Tetromino('S', "011\n110", TetrominoColour.Blue);
-        public static Tetromino T => new Tetromino('T', "111\n010", TetrominoColour.DarkGray);
-        public static Tetromino Z => new Tetromino('Z', "110\n011", TetrominoColour.DarkBlue);
+        public static Tetromino I(GameBoard board) => new Tetromino('I', "0000\n1111", TetrominoColour.Red, board);
+        public static Tetromino J(GameBoard board) => new Tetromino('J', "111\n001", TetrominoColour.Magenta, board);
+        public static Tetromino L(GameBoard board) => new Tetromino('L', "111\n100", TetrominoColour.Yellow, board);
+        public static Tetromino O(GameBoard board) => new Tetromino('O', "11\n11", TetrominoColour.Cyan, board);
+        public static Tetromino S(GameBoard board) => new Tetromino('S', "011\n110", TetrominoColour.Blue, board);
+        public static Tetromino T(GameBoard board) => new Tetromino('T', "111\n010", TetrominoColour.DarkGray, board);
+        public static Tetromino Z(GameBoard board) => new Tetromino('Z', "110\n011", TetrominoColour.DarkBlue, board);
+        public static Tetromino New(char name, GameBoard board)
+        {
+            MethodInfo method = typeof(Tetromino).GetRuntimeMethod(new string(name, 1), new Type[] { typeof(GameBoard) });
+            if (method != null)
+            {
+                Tetromino t = (Tetromino)method.Invoke(null, new object[] { board });
+                return t;
+            }
+
+            return null;
+        }
 
         private Grid<int> _grid;
         private IList<GridCell<int>> _activeCells;
+        private GameBoard _board;
 
         public int GridSize => _grid.Rows;
         public Grid<int> Grid => _grid.AsReadonly();
         public string Pattern { get; private set; }
         public TetrominoColour Colour { get; private set; }
         public char Name { get; private set; }
+        public GameBoard Board => _board;
+        public int RowOnBoard { get; private set; }
+        public int ColumnOnBoard { get; private set; }
 
         public IList<GridCell<int>> PopulatedCells
         {
@@ -62,35 +73,66 @@ namespace Tetris.Core
             }
         }
 
-        public void RotateClockwise()
+        public void MoveDown()
         {
-            Rotate(Direction.Clockwise);
-        }
-
-        public void RotateAnticlockwise()
-        {
-            Rotate(Direction.Anticlockwise);
-        }
-
-        private void Rotate(Direction direction)
-        {
-            Grid<int> transform = new Grid<int>(GridSize, GridSize);
-            for (int y = 0; y < GridSize; y++)
+            if (RowOnBoard + PopulatedCells.Last().Row < _board.Rows)
             {
-                for (int x = 0; x < GridSize; x++)
+                RowOnBoard++;
+            }
+        }
+
+        public void MoveLeft()
+        {
+            if (ColumnOnBoard + PopulatedCells.Min(x => x.Column) > 0)
+            {
+                ColumnOnBoard--;
+            }
+        }
+
+        public void MoveRight()
+        {
+            if (ColumnOnBoard + PopulatedCells.Max(x => x.Column) < _board.Columns)
+            {
+                ColumnOnBoard++;
+            }
+        }
+
+        public bool RotateClockwise()
+        {
+            return Rotate(RotationDirection.Clockwise);
+        }
+
+        public bool RotateAnticlockwise()
+        {
+            return Rotate(RotationDirection.Anticlockwise);
+        }
+
+        private bool Rotate(RotationDirection direction)
+        {
+            Grid<int> rotated = _grid.Rotate(direction);
+            // check collision
+            if (!Collides())
+            {
+                _grid = rotated;
+                _activeCells = null;
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool Collides()
+        {
+            Grid<int> gameGrid = _board.Grid.Subgrid(_board.Tetromino.RowOnBoard, _board.Tetromino.ColumnOnBoard, GridSize, GridSize);
+            foreach(GridCell<int> cell in Grid)
+            {
+                if (cell.Contents > 0 && gameGrid.GetCell(cell.Row, cell.Column).Contents > 0)
                 {
-                    int x2 = (direction == Direction.Clockwise) ? (GridSize-1) - y : y;
-                    int y2 = (direction == Direction.Clockwise) ? x : (GridSize-1) - x;
-                    transform[y2, x2] = _grid[y, x];
+                    // CLASH!
+                    return true;
                 }
             }
-
-            _grid = transform;
-            lock (this)
-            {
-                UpdatePattern();
-                _activeCells = null;
-            }
+            return false;
         }
 
         private void UpdatePattern()
@@ -108,11 +150,14 @@ namespace Tetris.Core
             Pattern = String.Join("\n", rows);
         }
 
-        public Tetromino(char name, string pattern, TetrominoColour colour)
+        public Tetromino(char name, string pattern, TetrominoColour colour, GameBoard board)
         {
             Pattern = pattern;
             Colour = colour;
             Name = name;
+            _board = board;
+            RowOnBoard = 0;
+            ColumnOnBoard = 0;
 
             string[] parts = pattern.Split('\n');
             int bounds = parts.Max(p => p.Length);

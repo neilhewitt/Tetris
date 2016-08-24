@@ -7,7 +7,7 @@ namespace Tetris.Core
 {
     public class Game
     {
-        public Matrix Matrix { get; }
+        public GameBoard Board { get; }
 
         public void BeginPlay()
         {
@@ -19,7 +19,7 @@ namespace Tetris.Core
 
         public Game(int rows = 22, int columns = 10)
         {
-            Matrix = new Matrix(rows, columns);
+            Board = new GameBoard(rows, columns);
         }
     }
 }

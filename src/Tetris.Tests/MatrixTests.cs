@@ -8,31 +8,31 @@ using Tetris.Core;
 namespace Tetris.Tests
 {
     [TestFixture]
-    public class MatrixTests
+    public class BoardTests
     {
         [Test]
-        public void CanCreateMatrix()
+        public void CanCreateBoard()
         {
-            Matrix matrix = null;
+            GameBoard Board = null;
 
             Assert.DoesNotThrow(() =>
             {
-                matrix = new Matrix();
+                Board = new GameBoard();
             });
-            Assert.That(matrix != null);
+            Assert.That(Board != null);
         }
 
         //[Test]
         //public void CanInjectTetromino()
         //{
         //    Tetromino t = Tetromino.O;
-        //    Matrix matrix = new Matrix();
+        //    Board Board = new Board();
 
         //    Assert.DoesNotThrow(() =>
         //    {
-        //        matrix._overlay.InjectTetromino(t);
+        //        Board._overlay.InjectTetromino(t);
         //    });
-        //    Assert.That(matrix._overlay.TetrominoInPlay.Name == 'O' && matrix._overlay.TetrominoPosition.Column == 0 && matrix._overlay.TetrominoPosition.Row == 0);
+        //    Assert.That(Board._overlay.TetrominoInPlay.Name == 'O' && Board._overlay.TetrominoPosition.Column == 0 && Board._overlay.TetrominoPosition.Row == 0);
         //}
     }
 }

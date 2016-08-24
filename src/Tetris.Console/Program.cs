@@ -9,34 +9,68 @@ namespace Tetris.Command
 {
     public class Program
     {
-        private static Tetromino[] _tetrominoes;
+        private static object _padlock = new object();
+        private static char[] _tetrominoes;
         private static int _rows;
         private static int _columns;
+        private static Random _random = new Random();
 
         public static void Main(string[] args)
         {
-            _tetrominoes = new Tetromino[] { Tetromino.I, Tetromino.J, Tetromino.L, Tetromino.O, Tetromino.S, Tetromino.T, Tetromino.Z };
+            _tetrominoes = new char[] { 'I', 'J', 'L', 'O', 'S', 'T', 'Z' };
 
             int index = 0;
             int column = 0;
             _rows = 22;
-            _columns = 50;
+            _columns = 10;
             Game game = new Game(columns: _columns);
-            game.Matrix.InjectTetromino(_tetrominoes[index]);
+            game.Board.BeginPlay(_tetrominoes[index]);
             ShowFrame();
-            
+            //Timer timer = new Timer(TimerTick, game, 1000, 1000);
+
             while (true)
             {
                 DisplayGameState(game);
-                if (!game.Matrix.Move())
+                ConsoleKeyInfo info = Console.ReadKey();
+                if (info.Key == ConsoleKey.DownArrow)
                 {
-                    game.Matrix.FreezeTetromino();
-                    //column += _tetrominoes[index].BoundingSquareSize;
-                    index = (index < 6 ? index + 1 : 0);
-                    game.Matrix.InjectTetromino(_tetrominoes[index], column);
+                    if (!game.Board.Move())
+                    {
+                        //column += _tetrominoes[index].BoundingSquareSize;
+                        index = _random.Next(0, 6); 
+                        game.Board.BeginPlay(_tetrominoes[index]);
+                    }
                 }
-                Thread.Sleep(100);
+                else if (info.Key == ConsoleKey.OemPeriod)
+                {
+                    game.Board.RotateClockwise();
+                }
+                else if (info.Key == ConsoleKey.OemComma)
+                {
+                    game.Board.RotateAnticlockwise();
+                }
+                else if (info.Key == ConsoleKey.RightArrow)
+                {
+                    game.Board.MoveRight();
+                }
+                else if (info.Key == ConsoleKey.LeftArrow)
+                {
+                    game.Board.MoveLeft();
+                }
             }
+        }
+
+        private static void TimerTick(object state)
+        {
+            Game game = (Game)state;
+            if (!game.Board.Move())
+            {
+                //column += _tetrominoes[index].BoundingSquareSize;
+                int index = _random.Next(0, 6);
+                game.Board.BeginPlay(_tetrominoes[index]);
+            }
+
+            DisplayGameState(game);
         }
 
         private static void ShowFrame()
@@ -54,24 +88,27 @@ namespace Tetris.Command
 
         private static void DisplayGameState(Game game)
         {
-            Matrix matrix = game.Matrix;
-            Grid<int> grid = matrix.GridWithCarrier;
-
-            foreach (GridRow<int> row in grid.GetRows())
+            lock (_padlock)
             {
-                Console.SetCursorPosition(1, row.First().Row);
-                foreach(GridCell<int> cell in row)
+                GameBoard Board = game.Board;
+                Grid<int> grid = Board.GridWithTetromino;
+
+                foreach (GridRow<int> row in grid.GetRows())
                 {
-                    if (cell.Contents == 0)
+                    Console.SetCursorPosition(1, row.First().Row);
+                    foreach (GridCell<int> cell in row)
                     {
-                        Console.Write(" ");
-                    }
-                    else
-                    {
-                        string colourName = Enum.GetName(typeof(TetrominoColour), (TetrominoColour)cell.Contents);
-                        Console.ForegroundColor = (ConsoleColor)Enum.Parse(typeof(ConsoleColor), colourName);
-                        Console.Write("0");
-                        Console.ForegroundColor = ConsoleColor.White;
+                        if (cell.Contents == 0)
+                        {
+                            Console.Write(" ");
+                        }
+                        else
+                        {
+                            string colourName = Enum.GetName(typeof(TetrominoColour), (TetrominoColour)cell.Contents);
+                            Console.ForegroundColor = (ConsoleColor)Enum.Parse(typeof(ConsoleColor), colourName);
+                            Console.Write("0");
+                            Console.ForegroundColor = ConsoleColor.White;
+                        }
                     }
                 }
             }

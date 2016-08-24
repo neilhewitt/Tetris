@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Tetris.Core
 {
-    public class Grid<T>
+    public class Grid<T> : IEnumerable<GridCell<T>>
     {
         protected int _rows;
         protected int _columns;
@@ -75,7 +75,6 @@ namespace Tetris.Core
         public void Set(int row, int column, T item)
         {
             CheckReadOnly();
-
             if (row >= _rows || column >= _columns || row < 0 || column < 0)
             {
                 throw new ArgumentOutOfRangeException("Row or column index was out of range.");
@@ -92,7 +91,6 @@ namespace Tetris.Core
         public void Reset(int row, int column)
         {
             CheckReadOnly();
-
             if (row >= _rows || column >= _columns || row < 0 || column < 0)
             {
                 throw new ArgumentOutOfRangeException("Row or column index was out of range.");
@@ -104,7 +102,6 @@ namespace Tetris.Core
         public void Clear()
         {
             CheckReadOnly();
-
             _grid = new T[_rows, _columns];
         }
 
@@ -115,9 +112,43 @@ namespace Tetris.Core
             return newGrid;
         }
 
+        public Grid<T> Subgrid(int startRow, int startColumn, int rows, int columns)
+        {
+            Grid<T> subgrid = new Grid<T>(rows, columns);
+
+            for (int row = startRow; row < startRow + rows; row++)
+            {
+                for (int column = startColumn; column < startColumn + columns; column++)
+                {
+                    int thisRow = row - startRow;
+                    int thisColumn = column - startColumn;
+                    subgrid.Set(thisRow, thisColumn, this[row, column]);
+                }
+            }
+
+            return subgrid;
+        }
+
+        public Grid<T> Rotate(RotationDirection direction)
+        {
+            Grid<T> transform = new Grid<T>(_columns, _rows);
+            for (int y = 0; y < _rows; y++)
+            {
+                for (int x = 0; x < _columns; x++)
+                {
+                    int x2 = (direction == RotationDirection.Clockwise) ? (_columns - 1) - y : y;
+                    int y2 = (direction == RotationDirection.Clockwise) ? x : (_rows - 1) - x;
+                    transform[y2, x2] = _grid[y, x];
+                }
+            }
+
+            return transform;
+        }
+
         public void Insert(Grid<T> source, int startRow, int startColumn, int endRow, int endColumn, int destinationRow, int destinationColumn, 
             Func<T, bool> selector = null, Func<T,T> mutator = null)
         {
+            CheckReadOnly();
             if (mutator == null) mutator = (item) => item; // returns grid content un-mutated
             if (selector == null) selector = (item) => true; // always selects
 
@@ -145,6 +176,16 @@ namespace Tetris.Core
             return readonlyGrid;
         }
 
+        public IEnumerator<GridCell<T>> GetEnumerator()
+        {
+            return Enumerable.Range(0, _rows).Select(x => GetRow(x)).SelectMany(x => x).GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IEnumerable)Enumerable.Range(0, _rows).Select(x => GetRow(x)).SelectMany(x => x)).GetEnumerator();
+        }
+
         private void CheckReadOnly()
         {
             if (ReadOnly)
@@ -160,11 +201,11 @@ namespace Tetris.Core
             _grid = new T[rows, columns];
         }
 
-        private Grid(Grid<T> contents)
+        private Grid(Grid<T> source)
         {
-            _rows = contents._rows;
-            _columns = contents._columns;
-            _grid = contents._grid;
+            _rows = source._rows;
+            _columns = source._columns;
+            _grid = source._grid;
         }
     }
 
@@ -214,5 +255,10 @@ namespace Tetris.Core
         public GridColumn(IEnumerable<GridCell<T>> collection) : base(collection)
         {
         }
+    }
+
+    public enum RotationDirection
+    {
+        Clockwise, Anticlockwise
     }
 }
