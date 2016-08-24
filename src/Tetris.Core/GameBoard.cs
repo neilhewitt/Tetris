@@ -42,7 +42,7 @@ namespace Tetris.Core
 
         public void BeginPlay()
         {
-            _tetromino = Tetromino.New(name, this);
+            _tetromino = Tetromino.New('O', this);
         }
 
         public bool Move()
